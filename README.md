@@ -1,2 +1,2 @@
 # metroclima-crds
-CRDS data processing
+CRDS (cavity ring-down system) data processing
