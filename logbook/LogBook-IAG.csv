@@ -5,10 +5,7 @@ Equipment,CRDS Picarro G2301 922-CFADS2200,,
 Measuring,CO2; CH4,,
 Data site came online,,,
 ,,,
-Event,"Start Event
-dd/mm/aaaa hh:mm","End Event
-dd/mm/aaaa hh:mm",Flags
-,,,
+Event,Start Event,End Event,Flags
 Calibração,01/01/2021 01:56,01/01/2021 02:29,KC
 Calibração,02/01/2021 02:57,02/01/2021 03:30,KC
 Calibração,03/01/2021 03:58,03/01/2021 04:31,KC
