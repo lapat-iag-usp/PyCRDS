@@ -1,5 +1,7 @@
-PyCRDS.graphs
-===============
+Graphs
+======
 
-.. automodule:: pycrds.graphs
+.. automodule:: graphs
    :members:
+   :undoc-members:
+   :show-inheritance:

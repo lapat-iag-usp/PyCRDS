@@ -1,8 +1,7 @@
-PyCRDS.datafile
-===============
+Datafile
+========
 
-.. automodule:: pycrds.datafile
-   :imported-members:
+.. automodule:: datafile
    :members:
    :undoc-members:
    :show-inheritance:

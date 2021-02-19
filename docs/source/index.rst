@@ -15,9 +15,7 @@ A library to CRDS (cavity ring-down spectroscopy) data processing
    :caption: Contents:
 
    LICENSE
-   datafile
-   flags
-   graphs
+   modules
 
 Indices and tables
 ==================

@@ -1,5 +1,7 @@
-PyCRDS.flags
-===============
+Flags
+=====
 
-.. automodule:: pycrds.flags
+.. automodule:: flags
    :members:
+   :undoc-members:
+   :show-inheritance:
