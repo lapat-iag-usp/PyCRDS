@@ -1,4 +1,3 @@
-os
 pandas
 tqdm
 numpy
