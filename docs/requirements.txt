@@ -1,3 +1,6 @@
+os
 pandas
+tqdm
+numpy
 bokeh
 sphinx
