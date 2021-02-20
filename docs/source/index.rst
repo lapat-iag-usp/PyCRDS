@@ -6,9 +6,7 @@
 Welcome to PyCRDS's documentation!
 ==================================
 
-PyCRDS
-======
-A library to CRDS (cavity ring-down spectroscopy) data processing
+.. mdinclude:: ../../README.md
 
 .. toctree::
    :maxdepth: 2
