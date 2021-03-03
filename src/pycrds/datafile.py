@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 from tqdm import tqdm
+import pathlib
 
 
 def read_files(dir_name):
@@ -48,9 +49,18 @@ def save_24h(df, path, file_id, level):
     """
     for day in df.index.dayofyear.unique():
         df_24h = df[(df.index.dayofyear == day)]
-        file_name = path + '/' + file_id + '-' + df_24h.index[0].strftime('%Y%m%d') + '-' + \
-                    df_24h.index[0].strftime('%H%M%S') + 'Z-DataLog_User_' + level + '.csv '
-        df_24h.to_csv(file_name)
+        year = str(df_24h.index[0].strftime('%Y'))
+        month = str(df_24h.index[0].strftime('%m'))
+        full_path = path + '/' + year + '/' + month
+        pathlib.Path(full_path).mkdir(parents=True, exist_ok=True)
+        file_name = full_path +\
+                    '/' + file_id + '-' +\
+                    df_24h.index[0].strftime('%Y%m%d') + '-' + \
+                    'Z-DataLog_User_' + level + '.csv'
+        if os.path.isfile(file_name):
+            df_24h.to_csv(file_name, mode='a', header=False)
+        else:
+            df_24h.to_csv(file_name)
 
 
 def resample_data(df, t, my_cols):
