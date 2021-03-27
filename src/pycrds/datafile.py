@@ -1,36 +1,36 @@
 import os
+from typing import List
+
 import pandas as pd
 from tqdm import tqdm
 import pathlib
 
 
-def read_files(dir_name):
-    """Return a list with all filenames from all subdirectories."""
-    filenames = []
-    for dirs, subdir, files in os.walk(dir_name):
-        subdir.sort()
-        files.sort()
-        for file in files:
-            filenames.append(dirs + os.sep + file)
-    return filenames
-
-
 def read_data(dir_name, my_cols):
     """
-    Return a dataframe with concatenated data from read_files.
+    Return a dataframe with concatenated data.
     Set timestamp as index.
 
     Parameters:
         dir_name (str): directory name
         my_cols (list-like): selected columns
     """
-    filenames = read_files(dir_name)
-    list_of_dfs = [pd.read_csv(filename,
-                               sep='\s+',
-                               usecols=my_cols,
-                               engine='python',
-                               parse_dates=[['DATE', 'TIME']])
-                   for filename in tqdm(filenames)]
+
+    filenames: List[str] = []
+    for dirs, subdir, files in os.walk(dir_name):
+        subdir.sort()
+        files.sort()
+        for file in files:
+            filenames.append(dirs + os.path.sep + file)
+
+    list_of_dfs = []
+    for filename in tqdm(filenames):
+        list_of_dfs.append(pd.read_csv(filename,
+                                       sep='\s+',
+                                       engine='python',
+                                       usecols=my_cols,
+                                       parse_dates=[['DATE', 'TIME']]))
+
     df = pd.concat(list_of_dfs, ignore_index=True)
     df = df.set_index('DATE_TIME')
     df.index = pd.to_datetime(df.index)
