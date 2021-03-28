@@ -4,18 +4,28 @@ from tqdm import tqdm
 import pathlib
 
 
-def read_files(dir_name):
-    """Return a list with all filenames from all subdirectories."""
+def read_files(dir_name, ext=".dat"):
+    """
+    Return a list with all filenames from all subdirectories with a certain type of extension.
+    
+    Parameters:
+        dir_name (str): directory name
+        ext (str): file extension
+    """
+    if not isinstance(ext, str):
+        raise TypeError("Variable extension must be a string. E.g. ext='.dat'")
+
     filenames = []
     for dirs, subdir, files in os.walk(dir_name):
         subdir.sort()
         files.sort()
         for file in files:
-            filenames.append(dirs + os.sep + file)
+            if file.lower().endswith(ext):
+                filenames.append(dirs + os.sep + file)
     return filenames
 
 
-def read_data(dir_name, my_cols):
+def read_data(dir_name, my_cols=None, ext=".dat"):
     """
     Return a dataframe with concatenated data from read_files.
     Set timestamp as index.
@@ -24,7 +34,7 @@ def read_data(dir_name, my_cols):
         dir_name (str): directory name
         my_cols (list-like): selected columns
     """
-    filenames = read_files(dir_name)
+    filenames = read_files(dir_name, ext)
     list_of_dfs = [pd.read_csv(filename,
                                sep='\s+',
                                usecols=my_cols,
