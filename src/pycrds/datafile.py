@@ -36,7 +36,7 @@ def read_data(dir_name, my_cols=None, ext=".dat"):
     """
     filenames = read_files(dir_name, ext)
     list_of_dfs = [pd.read_csv(filename,
-                               sep='\s+',
+                               sep=r'\s+',
                                usecols=my_cols,
                                engine='python',
                                parse_dates=[['DATE', 'TIME']])
@@ -52,11 +52,17 @@ def save_24h(df, path, file_id, level):
     Save 24-hour files
 
     Parameters:
-        df (pandas DataFrame): dataframe
+        df (pandas DataFrame): dataframe with DatetimeIndex
         path (str): path to save output files
         file_id (str): analyzer serial number
         level (str): data processing level
     """
+
+    if not isinstance(df, pd.DataFrame) or not isinstance(df.index, pd.DatetimeIndex):
+        raise TypeError("df must be pd.DataFrame and df.index must be pd.DatetimeIndex")
+    elif not isinstance(path, str) or not isinstance(file_id, str) or not isinstance(level, str):
+        raise TypeError("Arguments path, file_id and level must be str")
+
     for day in df.index.dayofyear.unique():
         df_24h = df[(df.index.dayofyear == day)]
         year = str(df_24h.index[0].strftime('%Y'))
