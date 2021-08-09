@@ -1,0 +1,5 @@
+.idea/
+.ipynb_checkpoints/
+src/pycrds.egg-info/
+src/pycrds/__pycache__/
+venv/
