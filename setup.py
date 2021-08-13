@@ -28,6 +28,6 @@ setup(
         "pandas >= 1.1",
         "bokeh >= 2.2",
         "matplotlib >= 3.2",
-        "tqdm >= 4.48",
+        "dask >= 2021.7.2",
     ],
 )

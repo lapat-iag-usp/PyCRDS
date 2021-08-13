@@ -1,39 +1,31 @@
 import os
-from typing import List
-
+import glob
 import pandas as pd
-from tqdm import tqdm
+import dask.dataframe as dd
 import pathlib
 
 
-def read_data(dir_name, my_cols):
+def read_data(dir_name, usecols, dtype):
     """
     Return a dataframe with concatenated data.
     Set timestamp as index.
 
     Parameters:
         dir_name (str): directory name
-        my_cols (list-like): selected columns
+        usecols (list-like): selected columns
+        dtype (dict): data type for columns
     """
 
-    filenames: List[str] = []
-    for dirs, subdir, files in os.walk(dir_name):
-        subdir.sort()
-        files.sort()
-        for file in files:
-            filenames.append(dirs + os.path.sep + file)
+    filenames = [filename for filename in glob.iglob(dir_name, recursive=True)]
+    filenames.sort()
+    df = dd.read_csv(filenames,
+                     sep=r'\s+',
+                     usecols=usecols,
+                     dtype=dtype)
+    df = df.compute()
+    df['DATE_TIME'] = pd.to_datetime(df['DATE'] + ' ' + df['TIME'])
+    df.drop(['DATE', 'TIME'], axis=1)
 
-    list_of_dfs = []
-    for filename in tqdm(filenames):
-        list_of_dfs.append(pd.read_csv(filename,
-                                       sep='\s+',
-                                       engine='python',
-                                       usecols=my_cols,
-                                       parse_dates=[['DATE', 'TIME']]))
-
-    df = pd.concat(list_of_dfs, ignore_index=True)
-    df = df.set_index('DATE_TIME')
-    df.index = pd.to_datetime(df.index)
     return df
 
 

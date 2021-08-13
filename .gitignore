@@ -3,3 +3,4 @@
 src/pycrds.egg-info/
 src/pycrds/__pycache__/
 venv/
+my_tests.py
