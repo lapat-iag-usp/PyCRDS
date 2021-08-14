@@ -21,7 +21,9 @@ def read_data(dir_name, usecols, dtype, date_range=None):
     filenames = [filename for filename in glob.iglob(dir_name, recursive=True)]
     filenames.sort()
     if date_range:
-        idx0 = filenames.index([x for x in filenames if date_range[0] in x][0]) - 1
+        idx0 = filenames.index([x for x in filenames if date_range[0] in x][0])
+        if idx0 != 0:
+            idx0 -= 1
         idx1 = filenames.index([x for x in filenames if date_range[-1] in x][-1]) + 1
         filenames = filenames[idx0:idx1]
     df = dd.read_csv(filenames,
