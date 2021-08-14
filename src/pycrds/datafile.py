@@ -3,9 +3,10 @@ import glob
 import pandas as pd
 import dask.dataframe as dd
 import pathlib
+from datetime import datetime, timedelta
 
 
-def read_data(dir_name, usecols, dtype):
+def read_data(dir_name, usecols, dtype, date_range=None):
     """
     Return a dataframe with concatenated data.
     Set timestamp as index.
@@ -14,19 +15,29 @@ def read_data(dir_name, usecols, dtype):
         dir_name (str): directory name
         usecols (list-like): selected columns
         dtype (dict): data type for columns
+        date_range (list of str): list with initial and final date 'yyyy/mm/dd'
     """
 
     filenames = [filename for filename in glob.iglob(dir_name, recursive=True)]
     filenames.sort()
+    if date_range:
+        idx0 = filenames.index([x for x in filenames if date_range[0] in x][0]) - 1
+        idx1 = filenames.index([x for x in filenames if date_range[-1] in x][-1]) + 1
+        filenames = filenames[idx0:idx1]
     df = dd.read_csv(filenames,
                      sep=r'\s+',
                      usecols=usecols,
                      dtype=dtype)
     df = df.compute()
     df['DATE_TIME'] = pd.to_datetime(df['DATE'] + ' ' + df['TIME'])
-    df.drop(['DATE', 'TIME'], axis=1)
+    df = df.set_index('DATE_TIME')
+    df = df.drop(['DATE', 'TIME'], axis=1)
 
-    return df
+    if date_range:
+        return df.loc[(df.index >= date_range[0]) &
+                      (df.index < datetime.strptime(date_range[-1], "%Y/%m/%d") + timedelta(days=1))]
+    else:
+        return df
 
 
 def save_24h(df, path, file_id, level):
