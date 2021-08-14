@@ -45,14 +45,11 @@ def save_24h(df, path, file_id, level):
         month = str(df_24h.index[0].strftime('%m'))
         full_path = path + '/' + year + '/' + month
         pathlib.Path(full_path).mkdir(parents=True, exist_ok=True)
-        file_name = full_path +\
-                    '/' + file_id + '-' +\
-                    df_24h.index[0].strftime('%Y%m%d') + '-' + \
-                    'Z-DataLog_User_' + level + '.csv'
-        if os.path.isfile(file_name):
-            df_24h.to_csv(file_name, mode='a', header=False)
-        else:
-            df_24h.to_csv(file_name)
+        file_name = full_path + \
+            '/' + file_id + '-' + \
+            df_24h.index[0].strftime('%Y%m%d') + \
+            'Z-DataLog_User_' + level + '.csv'
+        df_24h.to_csv(file_name)
 
 
 def resample_data(df, t, my_cols):
