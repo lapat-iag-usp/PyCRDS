@@ -19,8 +19,7 @@ def read_data(dir_name, usecols, dtype, raw_data=True, date_range=None):
         and set sep to r'\s+', otherwise ',', default is True
         date_range (list of str): list with initial and final date 'yyyy/mm/dd'
     """
-
-    filenames = [filename for filename in glob.iglob(dir_name, recursive=True)]
+    filenames = [filename for filename in glob.iglob(dir_name + '**/*.dat', recursive=True)]
     filenames.sort()
     if date_range:
         idx0 = filenames.index([x for x in filenames if date_range[0] in x][0])
