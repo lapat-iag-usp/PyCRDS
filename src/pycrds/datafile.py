@@ -6,7 +6,7 @@ import pathlib
 from datetime import datetime, timedelta
 
 
-def read_data(dir_name, usecols, dtype, date_range=None):
+def read_data(dir_name, usecols, dtype, raw_data=True, date_range=None):
     """
     Return a dataframe with concatenated data.
     Set timestamp as index.
@@ -15,10 +15,11 @@ def read_data(dir_name, usecols, dtype, date_range=None):
         dir_name (str): directory name
         usecols (list-like): selected columns
         dtype (dict): data type for columns
+        raw_data (bool): if True, combine date and time columns,
+        and set sep to r'\s+', otherwise ',', default is True
         date_range (list of str): list with initial and final date 'yyyy/mm/dd'
     """
-
-    filenames = [filename for filename in glob.iglob(dir_name, recursive=True)]
+    filenames = [filename for filename in glob.iglob(dir_name + '**/*.dat', recursive=True)]
     filenames.sort()
     if date_range:
         idx0 = filenames.index([x for x in filenames if date_range[0] in x][0])
@@ -26,14 +27,19 @@ def read_data(dir_name, usecols, dtype, date_range=None):
             idx0 -= 1
         idx1 = filenames.index([x for x in filenames if date_range[-1] in x][-1]) + 1
         filenames = filenames[idx0:idx1]
+    if raw_data:
+        sep = r'\s+'
+    else:
+        sep = ','
     df = dd.read_csv(filenames,
-                     sep=r'\s+',
+                     sep=sep,
                      usecols=usecols,
                      dtype=dtype)
     df = df.compute()
-    df['DATE_TIME'] = pd.to_datetime(df['DATE'] + ' ' + df['TIME'])
+    if raw_data:
+        df['DATE_TIME'] = pd.to_datetime(df['DATE'] + ' ' + df['TIME'])
+        df = df.drop(['DATE', 'TIME'], axis=1)
     df = df.set_index('DATE_TIME')
-    df = df.drop(['DATE', 'TIME'], axis=1)
 
     if date_range:
         return df.loc[(df.index >= date_range[0]) &
