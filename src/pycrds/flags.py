@@ -1,50 +1,58 @@
+import sqlite3
+
 import pandas as pd
-import numpy as np
 
 
-def read_logbook(path):
-    """
-    Return a dataframe with the logbook data.
-    Read events from the logbook file (.csv).
-    Drop incorrect timestamp.
-    Drop empty lines.
+def apply_automatic_flags(df: pd.DataFrame,
+                          config) -> pd.DataFrame:
 
-    Logbook columns: Initial_date | Final_date | Flags
+    def _automatic_flags(row):
+        """
+        Se mais de uma flag se aplica ao mesmo registro, apenas a primeira flag é aplicada
+        """
+        for rule in config['automatic_flags']:
+            if eval(rule['condition'], {"row": row}):
+                return rule['flag']
+        return 0
 
-    Parameters:
-        path (str): path of .csv logbook
-    """
-    lines = open(path).readlines()
-    lines_skip = lines.index('Initial_date,Final_date,Flags\n')
-    df = pd.read_csv(path, sep=',', skiprows=lines_skip)
-    for line in range(len(df['Initial_date'])):
-        try:
-            df.Initial_date[line] = pd.to_datetime(df.Initial_date[line], format='%Y/%m/%d %H:%M:%S')
-            df.Final_date[line] = pd.to_datetime(df.Final_date[line], format='%Y/%m/%d %H:%M:%S')
-        except:
-            df = df.drop(index=line)
-    df = df.dropna(how='all')
-    df = df[df.Flags.notna()]
-    df = df.reset_index(drop=True)
+        # if row['CavityTemp'] < 44.98:
+        #     return 1
+        # elif any(row[value] == 0 for value in config['zero_value_flag_columns']):
+        #     return 2
+        # else:
+        #     return 0
+
+    df['FA'] = df.apply(_automatic_flags, axis=1)
+
     return df
 
 
-def insert_manual_flags(df, df_logbook):
-    """
-    Return the dataframe with a column flag for manual control quality.
-    Use regex to remove duplicated characters for simultaneous events.
+def apply_manual_flags(df: pd.DataFrame,
+                       config) -> pd.DataFrame:
 
-    Parameters:
-        df (pandas DataFrame): data dataframe
-        df_logbook (pandas DataFrame): logbook dataframe
-    """
-    df['FLAGS'] = np.nan
-    lines_logbook = range(df_logbook['Initial_date'].shape[0])
-    for line in lines_logbook:
-        flag_range = (df.index >= df_logbook['Initial_date'][line]) & (df.index <= df_logbook['Final_date'][line])
-        # df.loc[flag_range, df.columns[:-1]] = np.nan
-        df.loc[flag_range, ['FLAGS']] = df.loc[flag_range, ['FLAGS']].fillna('') + df_logbook['Flags'][line]
-    df.FLAGS = df.FLAGS[df.FLAGS.notna()].apply(lambda x: x[::-1]).replace(to_replace='(.)(?=.*\\1)', value='',
-                                                                           regex=True)
-    df.FLAGS = df.FLAGS[df.FLAGS.notna()].apply(lambda x: x[::-1])
+    def _manual_flags(row):
+        for index, log_row in log.iterrows():
+            if log_row['start_date'] <= row.name <= log_row['end_date']:
+                return 1
+        return 0
+
+    # Banco de dados
+    conn = sqlite3.connect(config['database_path'])
+    query = "SELECT * FROM dashboard_Event"
+    log = pd.read_sql_query(query, conn)
+    conn.close()
+
+    # Logbook
+    # ATTENTION: Melhor usar o nome ou o logbook id?
+    log = log[log['name'].str.contains(config['logbook_name'], na=False)]
+    log = log.reset_index(drop=True)
+    log.loc[:, 'event_date'] = pd.to_datetime(log['event_date'])
+    log.loc[:, 'start_date'] = pd.to_datetime(log['start_date'])
+    log.loc[:, 'end_date'] = pd.to_datetime(log['end_date'])
+    log = log[(log.invalid == 1)]  # apenas eventos que invalidam os dados
+    log = log.sort_values(by='start_date')
+    log = log[(log['end_date'] >= df.index[0]) & (log['start_date'] <= df.index[-1])]
+
+    df['FM'] = df.apply(_manual_flags, axis=1)
+
     return df

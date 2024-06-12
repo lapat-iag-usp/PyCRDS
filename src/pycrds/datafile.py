@@ -1,103 +1,181 @@
-import os
+import calendar
 import glob
-import pandas as pd
-import dask.dataframe as dd
-import pathlib
+import warnings
 from datetime import datetime, timedelta
+from typing import Tuple, List, Dict
+
+import dask.dataframe as dd
+import pandas as pd
 
 
-def read_data(dir_name, usecols, dtype, raw_data=True, date_range=None):
+def get_filenames(path: str,
+                  date_range: Tuple[str, str] or str,
+                  serial_number: str) -> Tuple[List[str], str, str]:
     """
-    Return a dataframe with concatenated data.
-    Set timestamp as index.
+    Generates a list of .dat filenames in a directory matching a date range.
+    Check if all files selected have the serial number provided and if there
+    are any Sync files.
 
-    Parameters:
-        dir_name (str): directory name
-        usecols (list-like): selected columns
-        dtype (dict): data type for columns
-        raw_data (bool): if True, combine date and time columns,
-        and set sep to r'\s+', otherwise ',', default is True
-        date_range (list of str): list with initial and final date 'yyyy/mm/dd'
+    Parameters
+    ----------
+    path : str
+        Directory path where the .dat files are located. For example:
+        '/raw-data/iag/G2301_CFADS2502/DataLog_User'.
+    date_range : tuple of str or str
+        Date range to filter filenames. Can be a tuple in the format ('YYYY-MM-DD',
+        'YYYY-MM-DD') or a string in the format 'YYYY-MM'.
+        If a tuple, it should contain two date strings ('YYYY-MM-DD'), representing
+        the start and end dates. If a string, it should be in 'YYYY-MM' format,
+        representing an entire month.
+    serial_number : str
+        Serial number of the CRDS being read as written in the input file. For
+        example: 'CFADS2502'.
+
+    Returns
+    -------
+    tuple of (list of str, str, str)
+        A tuple containing:
+        - A list of filenames that match the specified date range.
+        - The start date as a string in the format 'YYYY-MM-DD'.
+        - The end date as a string in the format 'YYYY-MM-DD'.
+
     """
-    filenames = [filename for filename in glob.iglob(dir_name + '**/*.dat', recursive=True)]
+
+    if isinstance(date_range, tuple):
+        if len(date_range) != 2 or not all(isinstance(date, str) for date in date_range):
+            raise ValueError("Tuple must contain exactly two string elements.")
+        try:
+            start_date = datetime.strptime(date_range[0], '%Y-%m-%d')
+            end_date = datetime.strptime(date_range[1], '%Y-%m-%d')
+        except ValueError:
+            raise ValueError("Invalid date format in tuple. Expected 'YYYY-MM-DD'.")
+        if start_date > end_date:
+            raise ValueError("End date must be greater than or equal start date")
+    elif isinstance(date_range, str):
+        try:
+            start_date = datetime.strptime(date_range, '%Y-%m')
+        except ValueError:
+            raise ValueError("Invalid date format in tuple. Expected 'YYYY-MM-DD'.")
+        last_day = calendar.monthrange(start_date.year, start_date.month)[1]
+        end_date = datetime(start_date.year, start_date.month, last_day)
+    else:
+        raise TypeError("date_range must be a tuple or a string.")
+
+    previous_day = start_date - timedelta(days=1)
+    next_day = end_date + timedelta(days=1)
+    if previous_day.year == next_day.year and previous_day.month != 1 and next_day.month != 12:
+        filenames = [filename for filename in glob.iglob(path + f'/{previous_day.year}/**/*.dat', recursive=True)]
+    else:
+        filenames = [filename for filename in glob.iglob(path + '/**/*.dat', recursive=True)]
     filenames.sort()
-    if date_range:
-        idx0 = filenames.index([x for x in filenames if date_range[0] in x][0])
-        if idx0 != 0:
-            idx0 -= 1
-        idx1 = filenames.index([x for x in filenames if date_range[-1] in x][-1]) + 1
-        filenames = filenames[idx0:idx1]
-    if raw_data:
-        sep = r'\s+'
-    else:
-        sep = ','
+
+    try:
+        idx0_candidates = [x for x in filenames if previous_day.strftime('%Y%m%d') in x]
+        idx0_candidates.sort()
+        idx0 = filenames.index(idx0_candidates[-1])
+    except:
+        try:
+            idx0_candidates = [x for x in filenames if start_date.strftime('%Y%m%d') in x]
+            idx0_candidates.sort()
+            idx0 = filenames.index(idx0_candidates[0])
+        except:
+            try:
+                idx0_candidates = [x for x in filenames if start_date.strftime('%Y%m') in x]
+                idx0_candidates.sort()
+                idx0 = filenames.index(idx0_candidates[0])
+            except:
+                raise ValueError("No files found for the first date of the date range.")
+    try:
+        idx1_candidates = [x for x in filenames if next_day.strftime('%Y%m%d') in x]
+        idx1_candidates.sort()
+        idx1 = filenames.index(idx1_candidates[0])
+    except:
+        try:
+            idx1_candidates = [x for x in filenames if end_date.strftime('%Y%m%d') in x]
+            idx1_candidates.sort()
+            idx1 = filenames.index(idx1_candidates[-1])
+        except:
+            try:
+                idx1_candidates = [x for x in filenames if start_date.strftime('%Y%m') in x]
+                idx1_candidates.sort()
+                idx1 = filenames.index(idx1_candidates[-1])
+            except:
+                raise ValueError("No files found for the last date of the date range.")
+    filenames = filenames[idx0:idx1 + 1]
+    filenames.sort()
+
+    filenames_to_check = [filename.split('/')[-1] for filename in filenames]
+    if not all('Sync' not in name for name in filenames_to_check):
+        raise ValueError("There are Sync files in the path and date range provided")
+    serial_numbers = [filename.split('-')[0] for filename in filenames_to_check]
+    serial_numbers = list(set(serial_numbers))
+    if len(serial_numbers) == 1 and serial_numbers[0] != serial_number:
+        raise ValueError("Files do not correspond to the serial number provided")
+    elif len(serial_numbers) == 2:
+        if serial_number in serial_numbers:
+            other = [name for name in serial_numbers if name != serial_number][0]
+            if other.isalpha():
+                warnings.warn(f"There are one or more incomplete serial number in file names: {other}")
+        else:
+            raise ValueError("Not all files correspond to the same serial number provided")
+    elif len(serial_numbers) >= 3:
+        raise ValueError("Check files serial number")
+
+    return filenames, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d')
+
+
+def read_data(path: str,
+              date_range: Tuple[str, str] or str,
+              serial_number: str,
+              usecols: List[str],
+              dtype: Dict) -> pd.DataFrame:
+    """
+    Reads data from .dat files in a directory matching a date range and serial number.
+
+    Parameters
+    ----------
+    path : str
+        Directory path where the .dat files are located. For example:
+        '/raw-data/iag/G2301_CFADS2502/DataLog_User'.
+    date_range : tuple of str or str
+        Date range to filter filenames. Can be a tuple in the format ('YYYY-MM-DD',
+        'YYYY-MM-DD') or a string in the format 'YYYY-MM'.
+        If a tuple, it should contain two date strings ('YYYY-MM-DD'), representing
+        the start and end dates. If a string, it should be in 'YYYY-MM' format,
+        representing an entire month.
+    serial_number : str
+        Serial number of the CRDS being read as written in the input file. For
+        example: 'CFADS2502'
+    usecols : list of str
+        A list of column names to read from the .dat files.
+    dtype : dict
+        A dictionary specifying the data type for each column.
+
+    Returns
+    -------
+    pandas.DataFrame
+        A DataFrame containing the data read from the .dat files.
+
+    """
+
+    filenames, start_date, end_date = get_filenames(path, date_range, serial_number)
+
     df = dd.read_csv(filenames,
-                     sep=sep,
+                     sep=r'\s+',
                      usecols=usecols,
-                     dtype=dtype)
+                     dtype=dtype,
+                     engine='c',
+                     )
     df = df.compute()
-    if raw_data:
-        df['DATE_TIME'] = pd.to_datetime(df['DATE'] + ' ' + df['TIME'])
-        df = df.drop(['DATE', 'TIME'], axis=1)
+
+    # ATTENTION: Na UNICID e no isotópico, CO2 também é a species 1? Deveria ser uma entrada do usuário?
+    df = df[df.species == 1]
+    df = df.drop(['species'], axis=1)
+
+    df['DATE_TIME'] = pd.to_datetime(df['DATE'] + ' ' + df['TIME'])
+    df = df.drop(['DATE', 'TIME'], axis=1)
     df = df.set_index('DATE_TIME')
 
-    if date_range:
-        return df.loc[(df.index >= date_range[0]) &
-                      (df.index < datetime.strptime(date_range[-1], "%Y/%m/%d") + timedelta(days=1))]
-    else:
-        return df
+    df = df[(df.index >= start_date) & (df.index <= f'{end_date} 23:59:59.999')]
 
-
-def save_24h(df, path, file_id, level):
-    """
-    Save 24-hour files
-
-    Parameters:
-        df (pandas DataFrame): dataframe
-        path (str): path to save output files
-        file_id (str): analyzer serial number
-        level (str): data processing level
-    """
-    for day in df.index.dayofyear.unique():
-        df_24h = df[(df.index.dayofyear == day)]
-        year = str(df_24h.index[0].strftime('%Y'))
-        month = str(df_24h.index[0].strftime('%m'))
-        full_path = path + '/' + year + '/' + month
-        pathlib.Path(full_path).mkdir(parents=True, exist_ok=True)
-        file_name = full_path + \
-            '/' + file_id + '-' + \
-            df_24h.index[0].strftime('%Y%m%d') + \
-            'Z-DataLog_User_' + level + '.csv'
-        df_24h.to_csv(file_name)
-
-
-def resample_data(df, t, my_cols):
-    """
-    Returns a dataframe with resampled data [mean, std, count].
-
-    Parameters:
-        df (pandas DataFrame): dataframe
-        t ('T', 'H', 'D') : minute, hour or day
-        my_cols (list-like): selected columns
-    """
-    df_mean = df[my_cols].resample(t).mean()
-    df_std = df[my_cols].resample(t).std()
-    df_count = df[my_cols].resample(t).count()
-    return df_mean.join(df_std, rsuffix='_std').join(df_count, rsuffix='_count')
-
-
-def gantt_data(path, var, pos):
-    """
-    Returns a dataframe with data availability info.
-
-    Parameters:
-        path (str): file name
-        var (str): selected variable
-        pos (int): position in the graph (from bottom to top)
-    """
-    df = pd.read_csv(path)
-    df = df.set_index('DATE_TIME')
-    df.index = pd.to_datetime(df.index)
-    df['avail'] = df[var].isnull()  # look for null values
-    df['avail'] = df['avail'].map({False: pos})  # poputlate with graph position
     return df

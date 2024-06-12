@@ -1,6 +1,5 @@
+dask
 pandas
-tqdm
 numpy
-bokeh
 sphinx
 m2r2
