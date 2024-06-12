@@ -12,6 +12,7 @@
 
 import os
 import sys
+import subprocess
 sys.path.insert(0, os.path.abspath('../../src/pycrds'))
 
 # -- Project information -----------------------------------------------------
@@ -59,3 +60,5 @@ html_theme = 'sphinx_rtd_theme'
 # so a file named "default.css" will overwrite the builtin "default.css".
 # html_static_path = ['_static']
 
+requirements_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'requirements.txt'))
+subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-r', 'requirements.txt'])
