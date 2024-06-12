@@ -1,5 +1,5 @@
-dask
-pandas
-numpy
-sphinx
-m2r2
+dask==2024.5.2
+pandas==2.2.2
+numpy==1.26.4
+Sphinx==7.3.7
+m2r2==0.3.3.post2
