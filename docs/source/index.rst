@@ -6,7 +6,7 @@
 Welcome to PyCRDS's documentation!
 ==================================
 
-.. mdinclude:: ../../README.md
+.. include:: ../../README.rst
 
 .. toctree::
    :maxdepth: 2

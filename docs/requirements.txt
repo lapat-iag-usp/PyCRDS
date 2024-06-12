@@ -13,7 +13,6 @@ imagesize==1.4.1
 importlib_metadata==7.1.0
 Jinja2==3.1.4
 locket==1.0.0
-m2r2==0.3.3.post2
 MarkupSafe==2.1.5
 mistune==0.8.4
 numpy==1.26.4
