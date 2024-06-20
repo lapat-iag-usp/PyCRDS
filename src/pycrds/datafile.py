@@ -1,11 +1,13 @@
 import calendar
 import glob
 import warnings
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Tuple, List, Dict
 
 import dask.dataframe as dd
+import numpy as np
 import pandas as pd
+import xarray as xr
 
 
 def get_filenames(path: str,
@@ -124,11 +126,11 @@ def get_filenames(path: str,
     return filenames, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d')
 
 
-def read_data(path: str,
-              date_range: Tuple[str, str] or str,
-              serial_number: str,
-              usecols: List[str],
-              dtype: Dict) -> pd.DataFrame:
+def read_raw_data(path: str,
+                  date_range: Tuple[str, str] or str,
+                  serial_number: str,
+                  usecols: List[str],
+                  dtype: Dict) -> pd.DataFrame:
     """
     Reads data from .dat files in a directory matching a date range and serial number.
 
@@ -168,7 +170,7 @@ def read_data(path: str,
                      )
     df = df.compute()
 
-    # ATTENTION: Na UNICID e no isotópico, CO2 também é a species 1? Deveria ser uma entrada do usuário?
+    # ATTENTION: Is CO2 always species 1? Should it be a user input?
     df = df[df.species == 1]
     df = df.drop(['species'], axis=1)
 
@@ -179,3 +181,29 @@ def read_data(path: str,
     df = df[(df.index >= start_date) & (df.index <= f'{end_date} 23:59:59.999')]
 
     return df
+
+
+def save_dataset_level_0(df, config):
+
+    ds = xr.Dataset.from_dataframe(df)
+    ds = ds.rename({'DATE_TIME': 'time'})
+    ds['CAL'] = ds['CAL'].astype(np.int32)
+    ds['FA'] = ds['FA'].astype(np.int32)
+    ds['FM'] = ds['FM'].astype(np.int32)
+
+    global_attrs = config['global_attrs']
+    current_utc_time = datetime.now(timezone.utc)
+    current_utc_time = current_utc_time.strftime("%Y-%m-%d %H:%M:%S UTC")
+    global_attrs['processed_date'] = current_utc_time
+    ds.attrs = global_attrs
+
+    variable_attrs = config['variable_attrs']
+    for var in variable_attrs.keys():
+        ds[var].attrs = variable_attrs[var]
+
+    start_date = str(df.index.min())[0:10].replace('-', '')
+    end_date = str(df.index.max())[0:10].replace('-', '')
+    name_to_save = f'{config["file_serial_number"]}-{start_date}-{end_date}-DataLog_User-level_0.nc'
+
+    path_to_save = config['path_to_save']
+    ds.to_netcdf(f'{path_to_save}/{name_to_save}')
