@@ -59,8 +59,15 @@ def apply_calibration_flags(df: pd.DataFrame,
             end = df.index.max()
         mask = (df.index >= start) & (df.index <= end)
         # ATTENTION: Will solenoid_valves be the only method?
-        df.loc[mask, 'CAL'] = df.loc[mask, 'solenoid_valves'].apply(lambda x: 0 if x == 1 else 1)
+        df.loc[mask, 'CAL'] = df.loc[mask, 'solenoid_valves'].apply(lambda x: 0 if x in [0, 1] else 1)
+
     df['CAL'] = df['CAL'].fillna(0)
+
+    # If there is a manual flag (FM equals 1), it invalidates the calibration flag (CAL will be set to 0)
+    if 'FM' not in df.columns:
+        raise KeyError("The column 'FM' does not exist in the DataFrame.")
+    df['CAL'] = df.apply(lambda row: 0 if row['FM'] == 1 else row['CAL'], axis=1)
+
     last_indices = []
     last_one_idx = -1
     for i in range(len(df)):
