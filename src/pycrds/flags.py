@@ -53,34 +53,39 @@ def apply_manual_flags(df: pd.DataFrame,
 def apply_calibration_flags(df: pd.DataFrame,
                             config) -> pd.DataFrame:
 
+    values = []
     for calib_period in config['calibration']:
-        start, end, _ = calib_period
-        if end == '':
-            end = df.index.max()
-        mask = (df.index >= start) & (df.index <= end)
-        # ATTENTION: Will solenoid_valves be the only method?
-        df.loc[mask, 'CAL'] = df.loc[mask, 'solenoid_valves'].apply(lambda x: 0 if x in [0, 1] else 1)
-
-    df['CAL'] = df['CAL'].fillna(0)
+        _, _, value, _ = calib_period
+        values.append(value)
+    list(set(values))
+    # ATTENTION: Will solenoid_valves be the only method?
+    df['CAL'] = df['solenoid_valves'].apply(lambda x: x if x in values else 0)
 
     # If there is a manual flag (FM equals 1), it invalidates the calibration flag (CAL will be set to 0)
     if 'FM' not in df.columns:
         raise KeyError("The column 'FM' does not exist in the DataFrame.")
     df['CAL'] = df.apply(lambda row: 0 if row['FM'] == 1 else row['CAL'], axis=1)
 
-    last_indices = []
-    last_one_idx = -1
+    sequences = []
+    start_idx = -1
+    last_non_zero_idx = 0
     for i in range(len(df)):
-        if df['CAL'].iloc[i] == 1:
-            last_one_idx = i
+        if df['CAL'].iloc[i] != 0:
+            if start_idx == -1:
+                start_idx = i
+            last_non_zero_idx = i
         else:
-            if last_one_idx != -1:
-                last_indices.append(last_one_idx)
-                last_one_idx = -1
-    if last_one_idx != -1:
-        last_indices.append(last_one_idx)
-    for idx in last_indices:
-        df.iloc[idx:idx + 50, df.columns.get_loc('CAL')] = 1
+            if start_idx != -1:
+                sequences.append((start_idx, last_non_zero_idx))
+                start_idx = -1
+    if start_idx != -1:
+        sequences.append((start_idx, last_non_zero_idx))
+
+    for sequence in sequences:
+        start_idx = max(0, sequence[0] - 2)
+        end_idx = min(len(df), sequence[1] + 50)
+        df.iloc[start_idx:end_idx, df.columns.get_loc('CAL')] = df.iloc[sequence[0], df.columns.get_loc('CAL')]
+        df['CAL'] = df['CAL'].apply(lambda x: 1 if x != 0 else 0)
 
     return df
 
@@ -88,8 +93,8 @@ def apply_calibration_flags(df: pd.DataFrame,
 def apply_calibration_id(df, config):
 
     for calib_period in config['calibration']:
-        start, end, cal_id = calib_period
-        mask = (df.index >= start) & (df.index <= end) & (df['CAL'] == 1)
+        start, end, value, cal_id = calib_period
+        mask = (df.index >= start) & (df.index <= end) & (df['CAL'] == value)
         df.loc[mask, 'CAL_ID'] = cal_id
 
         return df
