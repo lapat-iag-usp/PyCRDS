@@ -85,7 +85,6 @@ def apply_calibration_flags(df: pd.DataFrame,
         start_idx = max(0, sequence[0] - 2)
         end_idx = min(len(df), sequence[1] + 50)
         df.iloc[start_idx:end_idx, df.columns.get_loc('CAL')] = df.iloc[sequence[0], df.columns.get_loc('CAL')]
-        df['CAL'] = df['CAL'].apply(lambda x: 1 if x != 0 else 0)
 
     return df
 
@@ -94,7 +93,11 @@ def apply_calibration_id(df, config):
 
     for calib_period in config['calibration']:
         start, end, value, cal_id = calib_period
+        if end == '':
+            end = df.index.max()
+        print(start, end, value, cal_id)
         mask = (df.index >= start) & (df.index <= end) & (df['CAL'] == value)
         df.loc[mask, 'CAL_ID'] = cal_id
+    df['CAL'] = df['CAL'].apply(lambda x: 1 if x != 0 else 0)
 
-        return df
+    return df
