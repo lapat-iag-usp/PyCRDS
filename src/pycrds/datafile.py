@@ -130,7 +130,8 @@ def read_raw_data(path: str,
                   date_range: Tuple[str, str] or str,
                   serial_number: str,
                   usecols: List[str],
-                  dtype: Dict) -> pd.DataFrame:
+                  dtype: Dict,
+                  species: Union[bool, int] = False) -> pd.DataFrame:
     """
     Reads data from .dat files in a directory matching a date range and serial number.
 
@@ -152,6 +153,9 @@ def read_raw_data(path: str,
         A list of column names to read from the .dat files.
     dtype : dict
         A dictionary specifying the data type for each column.
+    species : bool or int, optional
+        If False, no filtering by species is done. If an int, filter data by the
+        specified species value. Default is False.
 
     Returns
     -------
@@ -170,9 +174,9 @@ def read_raw_data(path: str,
                      )
     df = df.compute()
 
-    # ATTENTION: Is CO2 always species 1? Should it be a user input?
-    df = df[df.species == 1]
-    df = df.drop(['species'], axis=1)
+    if species:
+        df = df[df.species == species]
+        df = df.drop(['species'], axis=1)
 
     df['DATE_TIME'] = pd.to_datetime(df['DATE'] + ' ' + df['TIME'])
     df = df.drop(['DATE', 'TIME'], axis=1)
