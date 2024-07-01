@@ -2,7 +2,7 @@ import calendar
 import glob
 import warnings
 from datetime import datetime, timedelta, timezone
-from typing import Tuple, List, Dict
+from typing import Tuple, List, Dict, Union
 
 import dask.dataframe as dd
 import numpy as np
