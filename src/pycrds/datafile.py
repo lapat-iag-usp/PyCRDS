@@ -10,7 +10,7 @@ import pandas as pd
 import xarray as xr
 
 
-def get_filenames(path: str,
+def get_filenames(files_path: str,
                   date_range: Tuple[str, str] or str,
                   file_serial_number: str) -> Tuple[List[str], str, str]:
     """
@@ -20,7 +20,7 @@ def get_filenames(path: str,
 
     Parameters
     ----------
-    path : str
+    files_path : str
         Directory path where the .dat files are located. For example:
         '/raw-data/iag/G2301_CFADS2502/DataLog_User'.
     date_range : tuple of str or str
@@ -41,6 +41,11 @@ def get_filenames(path: str,
         - A list of filenames that match the specified date range.
         - The start date as a string in the format 'YYYY-MM-DD'.
         - The end date as a string in the format 'YYYY-MM-DD'.
+
+    Notes
+    -------
+    - The parameters files_path and file_serial_number may be defined in the
+      campaign config file.
 
     """
 
@@ -67,9 +72,9 @@ def get_filenames(path: str,
     previous_day = start_date - timedelta(days=1)
     next_day = end_date + timedelta(days=1)
     if previous_day.year == next_day.year and previous_day.month != 1 and next_day.month != 12:
-        filenames = [filename for filename in glob.iglob(path + f'/{previous_day.year}/**/*.dat', recursive=True)]
+        filenames = [filename for filename in glob.iglob(files_path + f'/{previous_day.year}/**/*.dat', recursive=True)]
     else:
-        filenames = [filename for filename in glob.iglob(path + '/**/*.dat', recursive=True)]
+        filenames = [filename for filename in glob.iglob(files_path + '/**/*.dat', recursive=True)]
     filenames.sort()
 
     try:
@@ -127,7 +132,7 @@ def get_filenames(path: str,
     return filenames, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d')
 
 
-def read_raw_data(path: str,
+def read_raw_data(files_path: str,
                   date_range: Tuple[str, str] or str,
                   file_serial_number: str,
                   usecols: List[str],
@@ -138,7 +143,7 @@ def read_raw_data(path: str,
 
     Parameters
     ----------
-    path : str
+    files_path : str
         Directory path where the .dat files are located. For example:
         '/raw-data/iag/G2301_CFADS2502/DataLog_User'.
     date_range : tuple of str or str
@@ -164,9 +169,14 @@ def read_raw_data(path: str,
     pandas.DataFrame
         A DataFrame containing the data read from the .dat files.
 
+    Notes
+    -------
+    - The parameters files_path, file_serial_number, usecols, dtype and species
+      may be defined in the campaign config file.
+
     """
 
-    filenames, start_date, end_date = get_filenames(path,
+    filenames, start_date, end_date = get_filenames(files_path,
                                                     date_range,
                                                     file_serial_number)
 
@@ -220,7 +230,7 @@ def save_dataset_level_0(df: pd.DataFrame,
      Notes
      -------
      - The parameters global_attrs, variable_attrs and file_serial_number may
-       be defined in the campaign config file
+       be defined in the campaign config file.
 
      """
 
