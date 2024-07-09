@@ -46,22 +46,52 @@ def apply_automatic_flags(df: pd.DataFrame,
 
 
 def apply_manual_flags(df: pd.DataFrame,
-                       config) -> pd.DataFrame:
+                       database_path: str,
+                       logbook_name: str) -> pd.DataFrame:
+    """
+    Applies manual flags to a DataFrame based on events from a database.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame to which the manual flags will be applied.
+
+    database_path : str
+        Path to the SQLite database containing event data.
+
+    logbook_name : str
+        Name or identifier of the logbook events to consider.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with the 'FM' column updated with manual flags:
+            - 1: Data point falls within a logged event period
+            - 0: Data point does not fall within any logged event period
+
+    Notes
+    -------
+    - The parameters database_path and logbook_name may be defined in the
+      campaign config file.
+    - Only events that invalidate data (where invalid=True) are considered.
+    - Date intervals are closed on both sides.
+
+    """
 
     # Banco de dados
-    conn = sqlite3.connect(config['database_path'])
+    conn = sqlite3.connect(database_path)
     query = "SELECT * FROM dashboard_Event"
     log = pd.read_sql_query(query, conn)
     conn.close()
 
     # Logbook
-    # ATTENTION: Is it better to use the logbook id?
-    log = log[log['name'].str.contains(config['logbook_name'], na=False)]
+    # ATTENTION: Is it better to use the logbook id instead of the name?
+    log = log[log['name'].str.contains(logbook_name, na=False)]
     log = log.reset_index(drop=True)
     log.loc[:, 'event_date'] = pd.to_datetime(log['event_date'])
     log.loc[:, 'start_date'] = pd.to_datetime(log['start_date'])
     log.loc[:, 'end_date'] = pd.to_datetime(log['end_date'])
-    log = log[(log.invalid == 1)]  # apenas eventos que invalidam os dados
+    log = log[(log.invalid == 1)]
     log = log.sort_values(by='start_date')
     log = log[(log['end_date'] >= df.index[0]) & (log['start_date'] <= df.index[-1])]
 
