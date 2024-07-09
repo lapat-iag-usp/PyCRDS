@@ -3,13 +3,41 @@ import sqlite3
 import pandas as pd
 
 
-def apply_automatic_flags(df: pd.DataFrame, config) -> pd.DataFrame:
+def apply_automatic_flags(df: pd.DataFrame,
+                          automatic_flags: list) -> pd.DataFrame:
+    """
+    Apply automatic flags to a DataFrame based on specified conditions.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame to which the flags will be applied.
+    automatic_flags : list
+        List of conditions to apply the flags, for example:
+        [
+            "row['CavityTemp'] < 44.98",
+            "any(row[value] == 0 for value in ['CO2', 'CO2_dry', 'CH4', 'CH4_dry'])"
+        ]
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with the 'FA' column updated with automatic flags.
+        'FA' column values:
+            - 1: Condition is true (flag is applied)
+            - 0: Condition is false (flag is not applied)
+
+    Notes
+    -----
+    - The conditions in `automatic_flags` must be strings evaluable as Python
+      expressions that return boolean values.
+    - The parameter automatic_flags may be defined in the campaign config file.
+
+    """
 
     df['FA'] = 0
-    compiled_conditions = [(rule, compile(rule, '<string>', 'eval')) for rule in
-                           config['automatic_flags']]
+    compiled_conditions = [(rule, compile(rule, '<string>', 'eval')) for rule in automatic_flags]
 
-    # Iterar sobre as regras compiladas e aplicar cada uma vetorizadamente
     for condition, compiled_condition in compiled_conditions:
         mask = df.apply(lambda row: eval(compiled_condition, {"row": row}), axis=1)
         df.loc[mask, 'FA'] = 1
