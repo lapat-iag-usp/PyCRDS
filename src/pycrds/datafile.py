@@ -12,7 +12,7 @@ import xarray as xr
 
 def get_filenames(path: str,
                   date_range: Tuple[str, str] or str,
-                  serial_number: str) -> Tuple[List[str], str, str]:
+                  file_serial_number: str) -> Tuple[List[str], str, str]:
     """
     Generates a list of .dat filenames in a directory matching a date range.
     Check if all files selected have the serial number provided and if there
@@ -29,9 +29,10 @@ def get_filenames(path: str,
         If a tuple, it should contain two date strings ('YYYY-MM-DD'), representing
         the start and end dates. If a string, it should be in 'YYYY-MM' format,
         representing an entire month.
-    serial_number : str
+    file_serial_number : str
         Serial number of the CRDS being read as written in the input file. For
-        example: 'CFADS2502'.
+        example: 'CFADS2502'. Be aware that it may be different from the instrument
+        serial number.
 
     Returns
     -------
@@ -111,11 +112,11 @@ def get_filenames(path: str,
         raise ValueError("There are Sync files in the path and date range provided")
     serial_numbers = [filename.split('-')[0] for filename in filenames_to_check]
     serial_numbers = list(set(serial_numbers))
-    if len(serial_numbers) == 1 and serial_numbers[0] != serial_number:
+    if len(serial_numbers) == 1 and serial_numbers[0] != file_serial_number:
         raise ValueError("Files do not correspond to the serial number provided")
     elif len(serial_numbers) == 2:
-        if serial_number in serial_numbers:
-            other = [name for name in serial_numbers if name != serial_number][0]
+        if file_serial_number in serial_numbers:
+            other = [name for name in serial_numbers if name != file_serial_number][0]
             if other.isalpha():
                 warnings.warn(f"There are one or more incomplete serial number in file names: {other}")
         else:
@@ -128,7 +129,7 @@ def get_filenames(path: str,
 
 def read_raw_data(path: str,
                   date_range: Tuple[str, str] or str,
-                  serial_number: str,
+                  file_serial_number: str,
                   usecols: List[str],
                   dtype: Dict,
                   species: Union[bool, int] = False) -> pd.DataFrame:
@@ -146,9 +147,10 @@ def read_raw_data(path: str,
         If a tuple, it should contain two date strings ('YYYY-MM-DD'), representing
         the start and end dates. If a string, it should be in 'YYYY-MM' format,
         representing an entire month.
-    serial_number : str
+    file_serial_number : str
         Serial number of the CRDS being read as written in the input file. For
-        example: 'CFADS2502'
+        example: 'CFADS2502'. Be aware that it may be different from the instrument
+        serial number.
     usecols : list of str
         A list of column names to read from the .dat files.
     dtype : dict
@@ -164,7 +166,9 @@ def read_raw_data(path: str,
 
     """
 
-    filenames, start_date, end_date = get_filenames(path, date_range, serial_number)
+    filenames, start_date, end_date = get_filenames(path,
+                                                    date_range,
+                                                    file_serial_number)
 
     df = dd.read_csv(filenames,
                      sep=r'\s+',
