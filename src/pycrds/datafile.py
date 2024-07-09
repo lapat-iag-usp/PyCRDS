@@ -187,7 +187,38 @@ def read_raw_data(path: str,
     return df
 
 
-def save_dataset_level_0(df, config):
+def save_dataset_level_0(df: pd.DataFrame,
+                         global_attrs: dict,
+                         variable_attrs: dict,
+                         file_serial_number: str,
+                         path_to_save: str) -> None:
+    """
+     Save a DataFrame as a level 0 NetCDF dataset with specified attributes.
+
+     Parameters
+     ----------
+     df : pd.DataFrame
+         DataFrame to be converted to a NetCDF dataset.
+     global_attrs : dict
+         Global attributes to add to the dataset.
+     variable_attrs : dict
+         Variable-specific attributes to add to the dataset.
+     file_serial_number : str
+         Serial number to include in the filename. Be aware that it may be
+         different from the instrument serial number.
+     path_to_save : str
+         Directory path where the file will be saved.
+
+     Returns
+     -------
+     None
+
+     Notes
+     -------
+     - The parameters global_attrs, variable_attrs and file_serial_number may
+       be defined in the campaign config file
+
+     """
 
     ds = xr.Dataset.from_dataframe(df)
     ds = ds.rename({'DATE_TIME': 'time'})
@@ -195,19 +226,16 @@ def save_dataset_level_0(df, config):
     ds['FA'] = ds['FA'].astype(np.int32)
     ds['FM'] = ds['FM'].astype(np.int32)
 
-    global_attrs = config['global_attrs']
     current_utc_time = datetime.now(timezone.utc)
     current_utc_time = current_utc_time.strftime("%Y-%m-%d %H:%M:%S UTC")
     global_attrs['processed_date'] = current_utc_time
     ds.attrs = global_attrs
 
-    variable_attrs = config['variable_attrs']
     for var in variable_attrs.keys():
         ds[var].attrs = variable_attrs[var]
 
     start_date = str(df.index.min())[0:10].replace('-', '')
     end_date = str(df.index.max())[0:10].replace('-', '')
-    name_to_save = f'{config["file_serial_number"]}-{start_date}-{end_date}-DataLog_User-level_0.nc'
+    name_to_save = f'{file_serial_number}-{start_date}-{end_date}-DataLog_User-level_0.nc'
 
-    path_to_save = config['path_to_save']
     ds.to_netcdf(f'{path_to_save}/{name_to_save}')
