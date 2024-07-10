@@ -207,30 +207,30 @@ def save_dataset_level_0(df: pd.DataFrame,
                          file_serial_number: str,
                          path_to_save: str) -> None:
     """
-     Save a DataFrame as a level 0 NetCDF dataset with specified attributes.
+    Save a DataFrame as a level 0 NetCDF dataset with specified attributes.
 
-     Parameters
-     ----------
-     df : pd.DataFrame
-         DataFrame to be converted to a NetCDF dataset.
-     global_attrs : dict
-         Global attributes to add to the dataset.
-     variable_attrs : dict
-         Variable-specific attributes to add to the dataset.
-     file_serial_number : str
-         Serial number to include in the filename. Be aware that it may be
-         different from the instrument serial number.
-     path_to_save : str
-         Directory path where the file will be saved.
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame to be converted to a NetCDF dataset.
+    global_attrs : dict
+        Global attributes to add to the dataset.
+    variable_attrs : dict
+        Variable-specific attributes to add to the dataset.
+    file_serial_number : str
+        Serial number to include in the filename. Be aware that it may be
+        different from the instrument serial number.
+    path_to_save : str
+        Directory path where the file will be saved.
 
-     Returns
-     -------
-     None
+    Returns
+    -------
+    None
 
-     Notes
-     -------
-     - The parameters global_attrs, variable_attrs and file_serial_number may
-       be defined in the campaign config file.
+    Notes
+    -------
+    - The parameters global_attrs, variable_attrs and file_serial_number may
+      be defined in the campaign config file.
 
      """
 
