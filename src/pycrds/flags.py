@@ -109,17 +109,56 @@ def apply_manual_flags(df: pd.DataFrame,
 
 
 def apply_calibration_flags(df: pd.DataFrame,
-                            config) -> pd.DataFrame:
+                            calibration_periods: list) -> pd.DataFrame:
+    """
+    Apply calibration flags to a DataFrame.
 
-    values = []
-    for calib_period in config['calibration']:
-        _, _, value, _ = calib_period
-        values.append(value)
-    list(set(values))
-    # ATTENTION: Will solenoid_valves be the only method?
-    df['CAL'] = df['solenoid_valves'].apply(lambda x: x if x in values else 0)
+    The function iterates through `df` rows and applies calibration flags and ID
+    based on the specified `calibration_periods`. It also handles cases where 'FM'
+    (manual flags) invalidate the calibration flags ('CAL').
 
-    # If there is a manual flag (FM equals 1), it invalidates the calibration flag (CAL will be set to 0)
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame with calibration data.
+    calibration_periods : list
+        List of calibration periods, each represented as a list with the format:
+        [start_time, end_time, value, id, method].
+        Example:
+        [
+            ["2020-12-18 16:00", "2021-10-25 15:00", 4, "D311113", "solenoid_valves"],
+            ["2021-10-25 19:00", "2022-10-05", 4, "D289341", "solenoid_valves"],
+            ["2021-10-18 19:00", "2022-10-05", 5, "CC339517", "solenoid_valves"],
+            ["2022-10-13", "", 4, "CC339517", "MPVPosition"]
+        ]
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with applied calibration flags and ID:
+        - 'CAL': Calibration flag (1 for calibration periods, 0 otherwise).
+        - 'CAL_ID': ID of the gas tank used during calibration periods.
+
+    Notes
+    -------
+    - The parameter calibration_periods may be defined in the campaign config file.
+    - Requires a column 'FM' (manual flags) in `df`. If 'FM' == 1, 'CAL' is set to 0.
+
+    """
+
+
+    def apply_flag(row):
+        for period in calibration_periods:
+            _, _, value, _, method = period
+            if row[method] == value:
+                return value
+        return 0
+
+
+    df['CAL'] = df.apply(apply_flag, axis=1)
+
+    # If there is a manual flag (FM equals 1), it invalidates the calibration
+    # flag (CAL will be set to 0)
     if 'FM' not in df.columns:
         raise KeyError("The column 'FM' does not exist in the DataFrame.")
     df['CAL'] = df.apply(lambda row: 0 if row['FM'] == 1 else row['CAL'], axis=1)
@@ -144,13 +183,16 @@ def apply_calibration_flags(df: pd.DataFrame,
         end_idx = min(len(df), sequence[1] + 50)
         df.iloc[start_idx:end_idx, df.columns.get_loc('CAL')] = df.iloc[sequence[0], df.columns.get_loc('CAL')]
 
+    df = _apply_calibration_id(df, calibration_periods)
+
     return df
 
 
-def apply_calibration_id(df, config):
+def _apply_calibration_id(df: pd.DataFrame,
+                         calibration_periods: list) -> pd.DataFrame:
 
-    for calib_period in config['calibration']:
-        start, end, value, cal_id = calib_period
+    for period in calibration_periods:
+        start, end, value, cal_id, _ = period
         if end == '':
             end = df.index.max()
         mask = (df.index >= start) & (df.index <= end) & (df['CAL'] == value)
