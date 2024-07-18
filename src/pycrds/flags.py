@@ -185,6 +185,9 @@ def apply_calibration_flags(df: pd.DataFrame,
 
     df = _apply_calibration_id(df, calibration_periods)
 
+    # Is this the best way to do it?
+    df.loc[df['CAL_ID'].isna(), 'CAL'] = 0
+
     return df
 
 
