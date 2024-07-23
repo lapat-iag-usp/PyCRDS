@@ -206,3 +206,41 @@ def _apply_calibration_id(df: pd.DataFrame,
     df['CAL'] = df['CAL'].apply(lambda x: 1 if x != 0 else 0)
 
     return df
+
+
+def apply_manual_calibration_flags(df: pd.DataFrame,
+                                   database_path: str,
+                                   logbook_name: str) -> pd.DataFrame:
+    assert "CAL" in df.columns
+    assert "CAL_ID" in df.columns
+
+    # Banco de dados
+    conn = sqlite3.connect(database_path)
+    query_flag = "SELECT * FROM dashboard_Flag"
+    flag = pd.read_sql_query(query_flag, conn)
+    query_log = "SELECT * FROM dashboard_Event"
+    log = pd.read_sql_query(query_log, conn)
+    conn.close()
+
+    # Logbook
+    flag_id = flag[flag.flag == 'C'].id.values[0]
+    log = log[log['name'].str.contains(logbook_name, na=False)]
+    log = log[(log.invalid == 1)]
+    log = log[(log.flags_id == flag_id)]
+
+    if len(log) == 0:
+        return df
+    else:
+        log = log.reset_index(drop=True)
+        log.loc[:, 'event_date'] = pd.to_datetime(log['event_date'])
+        log.loc[:, 'start_date'] = pd.to_datetime(log['start_date'])
+        log.loc[:, 'end_date'] = pd.to_datetime(log['end_date'])
+        log = log.sort_values(by='start_date')
+        log = log[(log['end_date'] >= df.index[0]) & (log['start_date'] <= df.index[-1])]
+
+        for _, row in log.iterrows():
+            mask = (df.index >= row['start_date']) & (df.index <= row['end_date'])
+            df.loc[mask, 'CAL'] = 1
+            df.loc[mask, 'CAL_ID'] = 'manual'
+
+        return df
