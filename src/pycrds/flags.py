@@ -80,18 +80,21 @@ def apply_manual_flags(df: pd.DataFrame,
 
     # Banco de dados
     conn = sqlite3.connect(database_path)
-    query = "SELECT * FROM dashboard_Event"
-    log = pd.read_sql_query(query, conn)
+    query_flag = "SELECT * FROM dashboard_Flag"
+    flag = pd.read_sql_query(query_flag, conn)
+    query_log = "SELECT * FROM dashboard_Event"
+    log = pd.read_sql_query(query_log, conn)
     conn.close()
 
     # Logbook
-    # ATTENTION: Is it better to use the logbook id instead of the name?
+    flag_id = flag[flag.flag == 'M'].id.values[0]
     log = log[log['name'].str.contains(logbook_name, na=False)]
+    log = log[(log.invalid == 1)]
+    log = log[(log.flags_id == flag_id)]
     log = log.reset_index(drop=True)
     log.loc[:, 'event_date'] = pd.to_datetime(log['event_date'])
     log.loc[:, 'start_date'] = pd.to_datetime(log['start_date'])
     log.loc[:, 'end_date'] = pd.to_datetime(log['end_date'])
-    log = log[(log.invalid == 1)]
     log = log.sort_values(by='start_date')
     log = log[(log['end_date'] >= df.index[0]) & (log['start_date'] <= df.index[-1])]
 
