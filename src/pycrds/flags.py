@@ -184,7 +184,8 @@ def apply_calibration_flags(df: pd.DataFrame,
     for sequence in sequences:
         start_idx = max(0, sequence[0] - 2)
         end_idx = min(len(df), sequence[1] + 50)
-        df.iloc[start_idx:end_idx, df.columns.get_loc('CAL')] = df.iloc[sequence[0], df.columns.get_loc('CAL')]
+        df.iloc[start_idx:sequence[0]+1, df.columns.get_loc('CAL')] = df.iloc[sequence[0], df.columns.get_loc('CAL')]
+        df.iloc[sequence[1]:end_idx, df.columns.get_loc('CAL')] = df.iloc[sequence[1], df.columns.get_loc('CAL')]
 
     df = _apply_calibration_id(df, calibration_periods)
 
