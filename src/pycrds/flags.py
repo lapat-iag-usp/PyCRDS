@@ -181,11 +181,21 @@ def apply_calibration_flags(df: pd.DataFrame,
     if start_idx != -1:
         sequences.append((start_idx, last_non_zero_idx))
 
-    for sequence in sequences:
-        start_idx = max(0, sequence[0] - 2)
-        end_idx = min(len(df), sequence[1] + 50)
-        df.iloc[start_idx:sequence[0]+1, df.columns.get_loc('CAL')] = df.iloc[sequence[0], df.columns.get_loc('CAL')]
-        df.iloc[sequence[1]:end_idx, df.columns.get_loc('CAL')] = df.iloc[sequence[1], df.columns.get_loc('CAL')]
+    for i in range(len(sequences)):
+        # print(i, sequences[i])
+        start_idx = max(0, sequences[i][0] - 2)
+        df.iloc[start_idx:sequences[i][0] + 1, df.columns.get_loc('CAL')] = df.iloc[sequences[i][0], df.columns.get_loc('CAL')]
+        if i < len(sequences) - 1:
+            end_current = sequences[i][1]
+            start_next = sequences[i + 1][0]
+            difference = start_next - end_current
+            # print(difference)
+            if difference >= 20:
+                end_idx = min(len(df), sequences[i][1] + 20)
+                df.iloc[sequences[i][1]:end_idx, df.columns.get_loc('CAL')] = df.iloc[sequences[i][1], df.columns.get_loc('CAL')]
+        elif i == len(sequences) - 1:
+            end_idx = min(len(df), sequences[i][1] + 20)
+            df.iloc[sequences[i][1]:end_idx, df.columns.get_loc('CAL')] = df.iloc[sequences[i][1], df.columns.get_loc('CAL')]
 
     df = _apply_calibration_id(df, calibration_periods)
 
