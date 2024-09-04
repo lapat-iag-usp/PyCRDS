@@ -104,7 +104,7 @@ def get_filenames(files_path: str,
             idx1 = filenames.index(idx1_candidates[-1])
         except:
             try:
-                idx1_candidates = [x for x in filenames if start_date.strftime('%Y%m') in x]
+                idx1_candidates = [x for x in filenames if end_date.strftime('%Y%m') in x]
                 idx1_candidates.sort()
                 idx1 = filenames.index(idx1_candidates[-1])
             except:
