@@ -236,9 +236,12 @@ def save_dataset_level_0(df: pd.DataFrame,
 
     ds = xr.Dataset.from_dataframe(df)
     ds = ds.rename({'DATE_TIME': 'time'})
-    ds['CAL'] = ds['CAL'].astype(np.int32)
-    ds['FA'] = ds['FA'].astype(np.int32)
-    ds['FM'] = ds['FM'].astype(np.int32)
+    if 'CAL' in ds:
+        ds['CAL'] = ds['CAL'].astype(np.int32)
+    if 'FA' in ds:
+        ds['FA'] = ds['FA'].astype(np.int32)
+    if 'FM' in ds:
+        ds['FM'] = ds['FM'].astype(np.int32)
 
     current_utc_time = datetime.now(timezone.utc)
     current_utc_time = current_utc_time.strftime("%Y-%m-%d %H:%M:%S UTC")
