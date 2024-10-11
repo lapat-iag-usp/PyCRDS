@@ -1,3 +1,4 @@
+import os
 import calendar
 import glob
 import warnings
@@ -112,7 +113,7 @@ def get_filenames(files_path: str,
     filenames = filenames[idx0:idx1 + 1]
     filenames.sort()
 
-    filenames_to_check = [filename.split('/')[-1] for filename in filenames]
+    filenames_to_check = [os.path.basename(filename) for filename in filenames]
     if not all('Sync' not in name for name in filenames_to_check):
         raise ValueError("There are Sync files in the path and date range provided")
     serial_numbers = [filename.split('-')[0] for filename in filenames_to_check]
