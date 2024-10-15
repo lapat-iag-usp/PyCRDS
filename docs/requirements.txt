@@ -39,4 +39,5 @@ sphinxcontrib-serializinghtml==1.1.10
 toolz==0.12.1
 tzdata==2024.1
 urllib3==2.2.1
+xarray==2024.6.0
 zipp==3.19.2
