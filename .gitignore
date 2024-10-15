@@ -6,3 +6,5 @@ venv/
 my_tests.py
 data/L0/
 docs/build/
+build/
+dist/

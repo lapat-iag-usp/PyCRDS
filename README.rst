@@ -10,9 +10,6 @@ PyCRDS is a library for CRDS (cavity ring-down spectroscopy) data processing.
 Installation
 ------------
 
-.. note::
-   This library is not available on PyPI yet. Install documentation is included as a standard element. Stay tuned for PyPI availability!
-
 .. code-block:: python
 
     pip install pycrds

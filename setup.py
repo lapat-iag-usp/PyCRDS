@@ -3,7 +3,7 @@ import pathlib
 
 here = pathlib.Path(__file__).parent.resolve()
 
-long_description = (here / 'README.rst').read_text(encoding='utf-8')
+long_description = (here / 'README.md').read_text(encoding='utf-8')
 
 setup(
     name='pycrds',
@@ -11,23 +11,24 @@ setup(
     description='A library to CRDS (cavity ring-down spectroscopy) data processing',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    url='https://github.com/marcia-marques/PyCRDS',
-    author='Marcia Marques, Daniel Castelo',
+    url='https://github.com/lapat-iag-usp/PyCRDS',
+    author='Marcia Marques',
     author_email='marcia.marques@alumni.usp.br',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering :: Atmospheric Science',
         'License :: OSI Approved :: BSD License',
-        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.11',
     ],
     package_dir={'': 'src'},
     packages=find_packages(where='src'),
     install_requires=[
-        "numpy >= 1.19",
-        "pandas >= 1.1",
-        "bokeh >= 2.2",
-        "matplotlib >= 3.2",
-        "dask >= 2021.7.2",
+        "numpy >= 1.26.4",
+        "pandas >= 2.2.2",
+        "xarray >= 2024.6.0",
+        "dask >= 2024.5.2",
+        "dask-expr >= 1.1.2",
+        "netCDF4 >= 1.6.5",
     ],
 )
