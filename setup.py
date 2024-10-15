@@ -23,6 +23,7 @@ setup(
     ],
     package_dir={'': 'src'},
     packages=find_packages(where='src'),
+    include_package_data=True,
     install_requires=[
         "numpy >= 1.26.4",
         "pandas >= 2.2.2",
