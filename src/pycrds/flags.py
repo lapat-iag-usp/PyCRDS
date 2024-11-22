@@ -243,7 +243,6 @@ def apply_manual_calibration_flags(df: pd.DataFrame,
         return df
     else:
         log = log.reset_index(drop=True)
-        log.loc[:, 'event_date'] = pd.to_datetime(log['event_date'])
         log.loc[:, 'start_date'] = pd.to_datetime(log['start_date'])
         log.loc[:, 'end_date'] = pd.to_datetime(log['end_date'])
         log = log.sort_values(by='start_date')
@@ -252,6 +251,9 @@ def apply_manual_calibration_flags(df: pd.DataFrame,
         for _, row in log.iterrows():
             mask = (df.index >= row['start_date']) & (df.index <= row['end_date'])
             df.loc[mask, 'CAL'] = 1
-            df.loc[mask, 'CAL_ID'] = 'manual'
+            if len(row['description'].split()) == 1:
+                df.loc[mask, 'CAL_ID'] = row['description']
+            else:
+                df.loc[mask, 'CAL_ID'] = 'manual'
 
         return df
