@@ -84,13 +84,16 @@ def apply_manual_flags(df: pd.DataFrame,
     flag = pd.read_sql_query(query_flag, conn)
     query_log = "SELECT * FROM dashboard_Event"
     log = pd.read_sql_query(query_log, conn)
+    query_logbook_id = "SELECT * FROM dashboard_Logbook"
+    logbook_id = pd.read_sql_query(query_logbook_id, conn)
     conn.close()
 
     # Logbook
     flag_id = flag[flag.flag == 'M'].id.values[0]
-    log = log[log['name'].str.contains(logbook_name, na=False)]
+    logbook_id = logbook_id[logbook_id.name == logbook_name].id.values[0]
     log = log[(log.invalid == 1)]
     log = log[(log.flags_id == flag_id)]
+    log = log[(log.logbook_id == logbook_id)]
     log = log.reset_index(drop=True)
     log.loc[:, 'event_date'] = pd.to_datetime(log['event_date'])
     log.loc[:, 'start_date'] = pd.to_datetime(log['start_date'])
