@@ -152,16 +152,13 @@ def apply_calibration_flags(df: pd.DataFrame,
 
     """
 
-
-    def apply_flag(row):
-        for period in calibration_periods:
-            _, _, value, _, method = period
-            if row[method] == value:
-                return value
-        return 0
-
-
-    df['CAL'] = df.apply(apply_flag, axis=1)
+    df['CAL'] = 0
+    for period in calibration_periods:
+        start, end, value, _, method = period
+        start = pd.to_datetime(start)
+        end = pd.to_datetime(end) if end else df.index.max()
+        mask = (df.index >= start) & (df.index <= end) & (df[method] == value)
+        df.loc[mask, 'CAL'] = value
 
     # If there is a manual flag (FM equals 1), it invalidates the calibration
     # flag (CAL will be set to 0)
