@@ -1,5 +1,6 @@
 import sqlite3
 
+import numpy as np
 import pandas as pd
 
 
@@ -202,6 +203,8 @@ def apply_calibration_flags(df: pd.DataFrame,
     # Is this the best way to do it?
     df.loc[df['CAL_ID'].isna(), 'CAL'] = 0
 
+    df["CAL_type"] = np.where(df["CAL"] == 1, "A", "")
+
     return df
 
 
@@ -224,6 +227,7 @@ def apply_manual_calibration_flags(df: pd.DataFrame,
                                    logbook_name: str) -> pd.DataFrame:
     assert "CAL" in df.columns
     assert "CAL_ID" in df.columns
+    assert "CAL_type" in df.columns
 
     # Banco de dados
     conn = sqlite3.connect(database_path)
@@ -255,5 +259,6 @@ def apply_manual_calibration_flags(df: pd.DataFrame,
                 df.loc[mask, 'CAL_ID'] = row['description']
             else:
                 df.loc[mask, 'CAL_ID'] = 'manual'
+            df.loc[mask, 'CAL_type'] = 'M'
 
         return df
